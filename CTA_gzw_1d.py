@@ -17,10 +17,12 @@ if __name__ == '__main__':
     t0 = time.time()
     # symble = 'yeeeth'
     x = 8
-    symble_lst = ['btcusdt', 'ethusdt', 'eosbtc']
+    symble_lst = ['C', 'CS', 'A', 'M', 'Y', 'P', 'OI', 'B', 'RM', 'L', 'V', 'PP', 'TA', 'RU', 'BU', 'MA', 'SC', 'FU',
+                   'AL', 'ZN', 'CU', 'PB', 'NI', 'SN', 'J', 'JM', 'I', 'RB', 'HC', 'ZC', 'FG', 'SF', 'SM', 'IF', 'IH',
+                   'IC', 'T', 'TF', 'AG', 'AU', 'JD', 'AP', 'CJ', 'CF', 'SR']  # 所有品种
     # symble_lst = ['ethusdt']
-    n = 240  # 回测周期
-    period = '240m'
+    n = 1  # 回测周期
+    period = '1d'
 
     N1_lst = [3]  # 计数阈值
     N2_lst = [5]  # 统计周期
@@ -36,59 +38,41 @@ if __name__ == '__main__':
     lever_lst = [1]  # 杠杆率，btc初始仓位pos=1,usdt初始仓位pos=0;做多情况下，btc仓位1+lever,usdt仓位-lever;
     # 做空情况下，btc仓位1-lever,usdt仓位lever
     fee = 0.001
-    date_lst = [('2017-01-01', '2017-10-01'), ('2017-10-01', '2018-01-01'), ('2018-01-01', '2018-11-01')]
+    date_lst = [('2015-01-01', '2020-10-01'), ('2017-01-01', '2020-10-01'), ('2015-01-01', '2017-16-01')]
     # date_lst = [('2017-01-01', '2018-10-01')]
     df_lst = []
     lst = []
     state_lst = []
 
-    for (s_date, e_date) in date_lst:
+    for symble in symble_lst:
+        print(symble)
+        group = pd.read_csv('e:/data/future_index/' + symble + '_' + '1d' + '_index.csv')
+        group = group[(group['date_time'] >= s_date) & (group['date_time'] <= e_date)]
+        group_day = pd.read_csv('data/ethusdt_1440m.csv') \
+            .assign(date_time=lambda df: df.date_time.apply(lambda x: str(x) + ' 00:00:00'))
+        group_day = group_day[(group_day['date_time'] >= s_date) & (group_day['date_time'] <= e_date)]
 
-        for symble in symble_lst:
-            print(symble)
-            if symble == 'ethusdt':
-                group = pd.read_csv('data/ethusdt_' + str(n) + 'm.csv')
-                group = group[(group['date_time'] >= s_date) & (group['date_time'] <= e_date)]
-                group_day = pd.read_csv('data/ethusdt_1440m.csv') \
-                    .assign(date_time=lambda df: df.date_time.apply(lambda x: str(x) + ' 00:00:00'))
-                group_day = group_day[(group_day['date_time'] >= s_date) & (group_day['date_time'] <= e_date)]
-
-            elif symble == 'eosbtc':
-                group = pd.read_csv('data/eosbtc_' + str(n) + 'm.csv')
-                group = group[(group['date_time'] >= s_date) & (group['date_time'] <= e_date)]
-                group_day = pd.read_csv('data/eosbtc_1440m.csv')
-                group_day = group_day[(group_day['date_time'] >= s_date) & (group_day['date_time'] <= e_date)]
-                print(group)
-                print(group_day)
-                group_day.to_csv('data/eos.csv')
-            else:
-                group = pd.read_csv('data/btc_index_' + period + '.csv').rename(columns={'date': 'date_time'}) \
-                    .assign(date_time=lambda df: df.date_time.apply(lambda x: str(x)))
-                group = group[(group['date_time'] >= s_date) & (group['date_time'] <= e_date)]
-                group_day = pd.read_csv('data/btc_index_' + '1440m' + '.csv').assign(
-                    date_time=lambda df: df.date_time + ' 00:00:00')
-                group_day = group_day[(group_day['date_time'] >= s_date) & (group_day['date_time'] <= e_date)]
-
-            for N_ATR in P_ATR_LST:
-                if len(group_day) == 0:
-                    continue
-                group_day['atr'] = talib.ATR(group_day['high'].values, group_day['low'].values,
-                                             group_day['close'].values, N_ATR)
-                day_atr = group_day[['date_time', 'atr']] \
-                    .assign(atr=lambda df: df.atr.shift(1)) \
-                    .merge(group, on=['date_time'], how='right') \
-                    .sort_values(['date_time']).fillna(method='ffill').reset_index(drop=True)
-                print(day_atr)
-                back_stime = day_atr.at[0, 'date_time']
-                back_etime = day_atr.at[len(day_atr) - 1, 'date_time']
-                for ATR_n in ATR_n_lst:
-                    for N1 in N1_lst:
-                        for N2 in N2_lst:
-                            for N3 in N3_lst:
-                                for N4 in N4_lst:
-                                    for N5 in N5_lst:
-                                        for N6 in N6_lst:
-                                            for lever in lever_lst:
+        for N_ATR in P_ATR_LST:
+            if len(group_day) == 0:
+                continue
+            group_day['atr'] = talib.ATR(group_day['high'].values, group_day['low'].values,
+                                         group_day['close'].values, N_ATR)
+            day_atr = group_day[['date_time', 'atr']] \
+                .assign(atr=lambda df: df.atr.shift(1)) \
+                .merge(group, on=['date_time'], how='right') \
+                .sort_values(['date_time']).fillna(method='ffill').reset_index(drop=True)
+            print(day_atr)
+            back_stime = day_atr.at[0, 'date_time']
+            back_etime = day_atr.at[len(day_atr) - 1, 'date_time']
+            for ATR_n in ATR_n_lst:
+                for N1 in N1_lst:
+                    for N2 in N2_lst:
+                        for N3 in N3_lst:
+                            for N4 in N4_lst:
+                                for N5 in N5_lst:
+                                    for N6 in N6_lst:
+                                        for lever in lever_lst:
+                                            for (s_date, e_date) in date_lst:
                                                 if len(group):
 
                                                     method = 'OCM' + str(N1) + '_' + str(N2) + '_' + str(N3) + \
